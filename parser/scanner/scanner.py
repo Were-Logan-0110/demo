@@ -1,7 +1,7 @@
-from interpreter import Token,TokenType,error
 from helpers import SourceIterator,keywords
 from dataclasses import dataclass,field
 from decimal import Decimal
+from interpreter import *
 @dataclass
 class Scanner(SourceIterator):
     tokens: list[Token] = field(default_factory=lambda: [])
@@ -9,7 +9,7 @@ class Scanner(SourceIterator):
         while not self.isAtEnd():
             self.start = self.current
             self.scanToken()
-        self.tokens.append(Token(TokenType.EOF,"\0",None,self.line))
+        self.tokens.append(Token(EOF,"\0",None,self.line))
         return self.tokens
     # Tokenize Source Code
     def scanToken(self) -> list[Token]:
@@ -17,36 +17,36 @@ class Scanner(SourceIterator):
         match char:
             # Single Characters Tokens
             case "(":
-                self.addToken(TokenType.LEFT_PAREN)
-            case ')': self.addToken(TokenType.RIGHT_PAREN)
-            case '{': self.addToken(TokenType.LEFT_BRACE)
-            case '}': self.addToken(TokenType.RIGHT_BRACE)
-            case '[': self.addToken(TokenType.LEFT_BRACKET)
-            case ']': self.addToken(TokenType.RIGHT_BRACKET)
-            case ',': self.addToken(TokenType.COMMA)
-            case '.': self.addToken(TokenType.DOT)
-            case '-': self.addToken(TokenType.MINUS)
-            case '+': self.addToken(TokenType.PLUS)
-            case ':': self.addToken(TokenType.COLON)
-            case ';': self.addToken(TokenType.SEMICOLON)
-            case "|": self.addToken(TokenType.OR)
-            case "^": self.addToken(TokenType.XOR)
-            case '*': self.addToken(TokenType.POW if self.match("*") else TokenType.STAR)
+                self.addToken(LEFT_PAREN)
+            case ')': self.addToken(RIGHT_PAREN)
+            case '{': self.addToken(LEFT_BRACE)
+            case '}': self.addToken(RIGHT_BRACE)
+            case '[': self.addToken(LEFT_BRACKET)
+            case ']': self.addToken(RIGHT_BRACKET)
+            case ',': self.addToken(COMMA)
+            case '.': self.addToken(DOT)
+            case '-': self.addToken(MINUS)
+            case '+': self.addToken(PLUS)
+            case ':': self.addToken(COLON)
+            case ';': self.addToken(SEMICOLON)
+            case "|": self.addToken(OR)
+            case "^": self.addToken(XOR)
+            case '*': self.addToken(POW if self.match("*") else STAR)
             case "&":
-                self.addToken(TokenType.AND if self.match("&") else TokenType.POS_ARGS)
+                self.addToken(AND if self.match("&") else POS_ARGS)
             case "!":
-                self.addToken(TokenType.BANG_EQUAL if self.match("=") else TokenType.BANG)
+                self.addToken(BANG_EQUAL if self.match("=") else BANG)
             case "=":
-                self.addToken(TokenType.EQUAL_EQUAL if self.match("=") else TokenType.EQUAL)
+                self.addToken(EQUAL_EQUAL if self.match("=") else EQUAL)
             case "<":
-                self.addToken(TokenType.LESS_EQUAL if self.match("=") else TokenType.R_SHIFT if self.match(">") else TokenType.LESS)
+                self.addToken(LESS_EQUAL if self.match("=") else R_SHIFT if self.match(">") else LESS)
             case ">":
-                self.addToken(TokenType.GREATER_EQUAL if self.match("=") else TokenType.L_SHIFT if self.match("<") else TokenType.GREATER)
+                self.addToken(GREATER_EQUAL if self.match("=") else L_SHIFT if self.match("<") else GREATER)
             case "/":
                 if self.match("/"):
                     while self.peek() != "\n" and (not self.isAtEnd()): self.advance()
                 else:
-                    self.addToken(TokenType.SLASH)
+                    self.addToken(SLASH)
             case " ": pass
             case "\r": pass
             case "\t": pass
@@ -66,7 +66,7 @@ class Scanner(SourceIterator):
                     error(self.line,f"Unexpected Character <{char}>.")
                     return []
         return self.tokens
-    def addToken(self,tokenType:TokenType,literal: object= None) -> None:
+    def addToken(self,tokenType:int,literal: object= None) -> None:
         # Extract Lexeme
         lexeme: str = self.source[self.start:self.current] # type: ignore
         self.tokens.append(Token(tokenType,lexeme,literal,self.line))
@@ -82,7 +82,7 @@ class Scanner(SourceIterator):
             exit(1)
         self.advance()
         string = self.source[self.start + 1:self.current-1]
-        self.addToken(TokenType.STRING if not formatted else TokenType.FORM_STRING,string)
+        self.addToken(STRING if not formatted else FORM_STRING,string)
     def parseNumber(self) -> None:
         isFloat = False
         while self.peek().isdigit(): self.advance() # type: ignore
@@ -92,7 +92,7 @@ class Scanner(SourceIterator):
             while self.peek().isdigit(): self.advance() # type: ignore
         val = eval(self.source[self.start:self.current]) # type: ignore
         val = Decimal(str(val)) if isinstance(val,float) else val
-        self.addToken(TokenType.FLOAT if isFloat else TokenType.INTEGER,val) # type: ignore
+        self.addToken(FLOAT if isFloat else INTEGER,val) # type: ignore
     def parseIdentifier(self) -> None:
         while self.peek().isalnum(): self.advance() # type: ignore
         text = self.source[self.start:self.current]
@@ -102,5 +102,5 @@ class Scanner(SourceIterator):
             self.parseString(True)
             return
         if not tokenType:
-            tokenType = TokenType.IDENTIFIER
+            tokenType = IDENTIFIER
         self.addToken(tokenType)

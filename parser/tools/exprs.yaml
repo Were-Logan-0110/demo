@@ -1,0 +1,46 @@
+Expr:
+    Binary:
+      left: "Expr"
+      operator: "Token"
+      right: "Expr"
+    Grouping:
+      expression: Expr
+    Literal:
+      value: object
+    Array:
+      elements: list[Expr]
+    Unary:
+      operator: Token
+      right: Expr
+    Variable:
+      name: Token
+    Unknown:
+    Var:
+      name: Token
+      initializer: "Expr = Unknown()"
+    FacVariable:
+      variable: Var
+      factor: Literal
+Stmt:
+  Expression:
+    expression: Expr
+  Block:
+    statements: list[Stmt]
+    stmtBlock: bool = False
+  If:
+    condition: Expr
+    thenBranch: Stmt
+    elseIfs:
+  While:
+    condition: Expr
+    body: Stmt
+  For:
+    initializer: Expression
+  Foreach:
+    collections: Array
+    body: Stmt
+    variable: Variable | None = None
+  Break:
+  Continue:
+  Print:
+    newLine: bool = False

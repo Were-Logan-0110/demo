@@ -1,76 +1,73 @@
-from interpreter import TokenType, report, Environment
-from ast_.expression import Binary, Literal, Stmt
-from ast_.expression import Grouping
-from ast_.expression import Unary
 from numpy import ndarray, array
-from ast_.expression import *
+from ast_._expression import *
+from interpreter import *
 from copy import deepcopy
 
 
-class ExprVisitor(ABC):
-    @abstractmethod
+class ExprVisitor:
+    
     def visitBinaryExpr(self, expr: Binary):
         pass
 
-    @abstractmethod
+    
     def visitLiteralExpr(self, expr: Literal):
         pass
 
-    @abstractmethod
+    
     def visitUnaryExpr(self, expr: Unary):
         pass
 
-    @abstractmethod
-    def visitGroupExpr(self, expr: Grouping):
+    
+    def visitGroupingExpr(self, expr: Grouping):
         pass
 
-    @abstractmethod
+    
     def visitArrayExpr(self, expr: Array):
         pass
 
-    @abstractmethod
-    def visitFacVariableExpr(self, expr: facVariable):
+    
+    def visitFacVariableExpr(self, expr: FacVariable):
         pass
 
-    @abstractmethod
+    
     def visitVariableExpr(self, expr: Variable):
         pass
 
 
-class StmtVisitor(ABC):
-    @abstractmethod
+class StmtVisitor:
+    
     def visitExpressionStmt(self, stmt: Expression):
         pass
 
-    @abstractmethod
+    
     def visitBlockStmt(self, stmt: Block):
         pass
 
-    @abstractmethod
+    
     def visitPrintStmt(self, stmt: Print):
         pass
 
-    @abstractmethod
+    
     def visitVarStmt(self, stmt: Var):
         pass
 
-    @abstractmethod
+    
     def visitIfStmt(self, stmt: If):
         pass
 
-    @abstractmethod
+    
     def visitWhileStmt(self, stmt: While):
         pass
 
-    @abstractmethod
+    
     def visitForeachStmt(self, stmt: Foreach):
         pass
 
-    @abstractmethod
+    
     def visitBreakStmt(self, stmt: Break):
         pass
 
-    @abstractmethod
+    
     def visitContinueStmt(self, stmt: Continue):
         pass
 
@@ -132,16 +129,15 @@ class ASTInterpreter(ExprVisitor, StmtVisitor):
     def visitLiteralExpr(self, expr: Literal) -> object:
         return expr.value
 
-    def visitGroupExpr(self, expr: Grouping):
+    def visitGroupingExpr(self, expr: Grouping):
         return self.evaluate(expr.expression)
 
     def visitUnaryExpr(self, expr: Unary) -> object:
         right: object = self.evaluate(expr.right)
         expr.right
-        match expr.operator.type:
-            case TokenType.MINUS:
+        if expr.operator.type == MINUS:
                 return -right  # type: ignore
-            case TokenType.BANG:
+        elif expr.operator.type == BANG:
                 return not self.isTruthy(right)
         return None
 
@@ -149,42 +145,41 @@ class ASTInterpreter(ExprVisitor, StmtVisitor):
         right: object = self.evaluate(expr.right)
         left: object = self.evaluate(expr.left)
         try:
-            match expr.operator.type:
-                case TokenType.MINUS:
+            if expr.operator.type == MINUS:
                     return left - right  # type: ignore
-                case TokenType.PLUS:
+            elif expr.operator.type == PLUS:
                     return left + right  # type: ignore
-                case TokenType.SLASH:
+            elif expr.operator.type == SLASH:
                     return left / right  # type: ignore
-                case TokenType.STAR:
+            elif expr.operator.type == STAR:
                     return left * right  # type: ignore
-                case TokenType.AND:
+            elif expr.operator.type == AND:
                     return left & right  # type: ignore
-                case TokenType.OR:
+            elif expr.operator.type == OR:
                     return left | right  # type: ignore
-                case TokenType.XOR:
+            elif expr.operator.type == XOR:
                     return left & right  # type: ignore
-                case TokenType.L_SHIFT:
+            elif expr.operator.type == L_SHIFT:
                     return left << right  # type: ignore
-                case TokenType.R_SHIFT:
+            elif expr.operator.type == R_SHIFT:
                     return left >> right  # type: ignore
-                case TokenType.GREATER:
+            elif expr.operator.type == GREATER:
                     return left > right  # type: ignore
-                case TokenType.GREATER_EQUAL:
+            elif expr.operator.type == GREATER_EQUAL:
                     return left >= right  # type: ignore
-                case TokenType.LESS:
+            elif expr.operator.type == LESS:
                     return left < right  # type: ignore
-                case TokenType.LESS_EQUAL:
+            elif expr.operator.type == LESS_EQUAL:
                     return left <= right  # type: ignore
-                case TokenType.BANG_EQUAL:
+            elif expr.operator.type == BANG_EQUAL:
                     return not self.isEqual(left, right)
-                case TokenType.EQUAL_EQUAL:
+            elif expr.operator.type == EQUAL_EQUAL:
                     return self.isEqual(left, right)
         except Exception as e:
             report(
                 expr.operator.line,
                 "",
-                f" unsupported operand type(s) for {expr.operator.lexeme}: '{left.__class__.__name__}' and '{right.__class__.__name__}' ",
+                " unsupported operand type(s) for {}: '{}' and '{}' ".format(expr.operator.lexeme, left.__class__.__name__, right.__class__.__name__),
             )
         return None
 
@@ -259,67 +254,70 @@ class MAST(ExprVisitor, StmtVisitor):
         statement.accept(self)
 
     def visitLiteralExpr(self, expr: Literal) -> object:
-        return MNumber(expr.value)
+        return Number(expr.value)
 
-    def visitGroupExpr(self, expr: Grouping):
+    def visitGroupingExpr(self, expr: Grouping):
         group = self.evaluate(expr.expression)
+        group.priority = True
         return group
+
     def visitUnaryExpr(self, expr: Unary) -> object:
         right: object = self.evaluate(expr.right)
-        match expr.operator.type:
-            case TokenType.MINUS:
-                return -right  # type: ignore
-            case TokenType.BANG:
-                return not self.isTruthy(right)
-            case TokenType.PLUS:
-                return +right
+        if expr.operator.type == MINUS:
+            return Negation(right)  # type: ignore
+        elif expr.operator.type == BANG:
+            return not self.isTruthy(right)
+        elif expr.operator.type == PLUS:
+            return +right
         return None
-
-    def visitFacVariableExpr(self, expr: facVariable):
-        return MNumber(self.evaluate(expr.factor)) * MVariable(expr.variable.name)
+    def visitNegativeExpr(self,expr: Negative):
+        return Negation(self.evaluate(expr.expression))
+    def visitFacVariableExpr(self, expr: FacVariable):
+        return Number(self.evaluate(expr.factor)).mul(MVariable(expr.variable.name))
 
     def visitBinaryExpr(self, expr: Binary):
         right: object = self.evaluate(expr.right)
         left: object = self.evaluate(expr.left)
         try:
-            match expr.operator.type:
-                case TokenType.MINUS:
-                    return Subtraction(left, right)  # type: ignore
-                case TokenType.PLUS:
-                    return Addition(left, right)  # type: ignore
-                case TokenType.SLASH:
-                    return Division(left, right)  # type: ignore
-                case TokenType.STAR:
-                    return Mult(left, right)  # type: ignore
-                case TokenType.POW:
-                    return Exponentiation(left, right)  # type: ignore
-                case TokenType.AND:
-                    return left & right  # type: ignore
-                case TokenType.OR:
-                    return left | right  # type: ignore
-                case TokenType.XOR:
-                    return left & right  # type: ignore
-                case TokenType.L_SHIFT:
-                    return left << right  # type: ignore
-                case TokenType.R_SHIFT:
-                    return left >> right  # type: ignore
-                case TokenType.GREATER:
-                    return left > right  # type: ignore
-                case TokenType.GREATER_EQUAL:
-                    return left >= right  # type: ignore
-                case TokenType.LESS:
-                    return left < right  # type: ignore
-                case TokenType.LESS_EQUAL:
-                    return left <= right  # type: ignore
-                case TokenType.BANG_EQUAL:
-                    return not self.isEqual(left, right)
-                case TokenType.EQUAL_EQUAL:
-                    return self.isEqual(left, right)
+            if expr.operator.type == MINUS:
+                return Subtraction(left, right)  # type: ignore
+            elif expr.operator.type == PLUS:
+                return Addition(left, right)  # type: ignore
+            elif expr.operator.type == SLASH:
+                return Division(left, right)  # type: ignore
+            elif expr.operator.type == STAR:
+                return Multiplication(left, right)  # type: ignore
+            elif expr.operator.type == POW:
+                return Exponentiation(left, right)  # type: ignore
+            elif expr.operator.type == AND:
+                return left & right  # type: ignore
+            elif expr.operator.type == OR:
+                return left | right  # type: ignore
+            elif expr.operator.type == XOR:
+                return left & right  # type: ignore
+            elif expr.operator.type == L_SHIFT:
+                return left << right  # type: ignore
+            elif expr.operator.type == R_SHIFT:
+                return left >> right  # type: ignore
+            elif expr.operator.type == GREATER:
+                return left > right  # type: ignore
+            elif expr.operator.type == GREATER_EQUAL:
+                return left >= right  # type: ignore
+            elif expr.operator.type == LESS:
+                return left < right  # type: ignore
+            elif expr.operator.type == LESS_EQUAL:
+                return left <= right  # type: ignore
+            elif expr.operator.type == BANG_EQUAL:
+                return not self.isEqual(left, right)
+            elif expr.operator.type == EQUAL_EQUAL:
+                return self.isEqual(left, right)
         except Exception as e:
+            from traceback import format_exc
+            print(format_exc())
             report(
                 expr.operator.line,
                 "",
-                f" unsupported operand type(s) for {expr.operator.lexeme}: '{left.__class__.__name__}' and '{right.__class__.__name__}' ",
+                " unsupported operand type(s) for {}: '{}' and '{}' ".format(expr.operator.lexeme, left.__class__.__name__, right.__class__.__name__),
             )
         return None
 
@@ -361,56 +359,3 @@ class MAST(ExprVisitor, StmtVisitor):
 
     def visitWhileStmt(self, stmt):
         pass
-
-
-class ASTSimplifier(MAST):
-    def visitBinaryExpr(self, expr: Binary):
-        right: object = self.evaluate(expr.right)
-        left: object = self.evaluate(expr.left)
-        try:
-            match expr.operator.type:
-                case TokenType.MINUS:
-                    return Subtraction(left, right)  # type: ignore
-                case TokenType.PLUS:
-                    return Addition(left, right)  # type: ignore
-                case TokenType.SLASH:
-                    return Division(left, right)  # type: ignore
-                case TokenType.STAR:
-                    return Mult(left, right)  # type: ignore
-                case TokenType.POW:
-                    return Exponentiation(left, right)  # type: ignore
-                case TokenType.AND:
-                    return left & right  # type: ignore
-                case TokenType.OR:
-                    return left | right  # type: ignore
-                case TokenType.XOR:
-                    return left & right  # type: ignore
-                case TokenType.L_SHIFT:
-                    return left << right  # type: ignore
-                case TokenType.R_SHIFT:
-                    return left >> right  # type: ignore
-                case TokenType.GREATER:
-                    return left > right  # type: ignore
-                case TokenType.GREATER_EQUAL:
-                    return left >= right  # type: ignore
-                case TokenType.LESS:
-                    return left < right  # type: ignore
-                case TokenType.LESS_EQUAL:
-                    return left <= right  # type: ignore
-                case TokenType.BANG_EQUAL:
-                    return not self.isEqual(left, right)
-                case TokenType.EQUAL_EQUAL:
-                    return self.isEqual(left, right)
-        except Exception as e:
-            report(
-                expr.operator.line,
-                "",
-                f" unsupported operand type(s) for {expr.operator.lexeme}: '{left.__class__.__name__}' and '{right.__class__.__name__}' ",
-            )
-        return None
-    def evaluate(self, expr: Expr) -> MExpression:
-        return super().evaluate(expr)
-    def visitGroupExpr(self, expr: Grouping):
-        group = self.evaluate(expr.expression)
-        group.priority = True
-        return group

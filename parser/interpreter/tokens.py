@@ -1,97 +1,93 @@
-from dataclasses import dataclass
-from typing import Final
-from enum import Enum,auto
+LEFT_PAREN = 1
+RIGHT_PAREN = 2
+LEFT_BRACE = 3
+RIGHT_BRACE = 4
+LEFT_BRACKET = 5
+RIGHT_BRACKET = 6
+COMMA = 7
+DOT = 8
+MINUS = 9
+PLUS = 10
+COLON = 11
+SEMICOLON = 12
+SLASH = 13
+STAR = 14
+POS_ARGS = 15
 
-# Token Types
-class TokenType(Enum):
-    # Single character tokens.
-    LEFT_PAREN = auto()
-    RIGHT_PAREN = auto()
-    LEFT_BRACE = auto()
-    RIGHT_BRACE = auto()
-    LEFT_BRACKET = auto()
-    RIGHT_BRACKET = auto()
-    COMMA = auto()
-    DOT = auto()
-    MINUS = auto()
-    PLUS = auto()
-    COLON = auto()
-    SEMICOLON = auto()
-    SLASH = auto()
-    STAR = auto()
-    POS_ARGS = auto()
+OR = 16
+AND = 17
+BANG = 18
+BANG_EQUAL = 19
+XOR = 20
+POW = 21
+EQUAL = 22
+R_SHIFT = 23
+L_SHIFT = 24
+EQUAL_EQUAL = 25
+GREATER = 26
+GREATER_EQUAL = 27
+LESS = 28
+LESS_EQUAL = 29
 
-    # One or two character tokens
-    OR = auto()
-    AND = auto()
-    BANG = auto()
-    BANG_EQUAL = auto()
-    XOR = auto()
-    POW = auto()
-    EQUAL = auto()
-    R_SHIFT = auto()
-    L_SHIFT = auto()
-    EQUAL_EQUAL = auto()
-    GREATER = auto()
-    GREATER_EQUAL = auto()
-    LESS = auto()
-    LESS_EQUAL = auto()
+IDENTIFIER = 30
+STRING = 31
+FORM_STRING = 32
+INTEGER = 33
+FLOAT = 34
+BOOLEN = 35
 
-    # Literals
-    IDENTIFIER = auto()
-    STRING = auto()
-    FORM_STRING = auto()
-    INTEGER = auto()
-    FLOAT = auto()
-    BOOLEN = auto()
+TYPE_STRING = 36
+TYPE_INTEGER = 37
+TYPE_FLOAT = 38
+TYPE_BOOLEN = 39
+TYPE_ARRAY = 40
 
-    # Types
-    TYPE_STRING = auto()
-    TYPE_INTEGER = auto()
-    TYPE_FLOAT = auto()
-    TYPE_BOOLEN = auto()
-    TYPE_ARRAY = auto()
+ELSE = 41
+FALSE = 42
+FUN = 43
+CLASS = 44
+FOR = 45
+FOR_EACH = 46
+IF = 47
+ELSE_IF = 48
+NULL = 49
+VAR = 50
+PRINT = 51
+PRINTLN = 52
+RETURN = 53
+BREAK = 54
+CONTINUE = 55
+IN = 56
+WHILE = 57
+TRUE = 58
+RAISE = 59
 
-    # Keywords
-    ELSE = auto()
-    FALSE = auto()
-    FUN = auto()
-    CLASS = auto()
-    FOR = auto()
-    FOR_EACH = auto()
-    IF = auto()
-    ELSE_IF = auto()
-    NULL = auto()
-    VAR = auto()
-    PRINT = auto()
-    PRINTLN = auto()
-    RETURN = auto()
-    BREAK = auto()
-    CONTINUE = auto()
-    IN = auto()
-    WHILE = auto()
-    TRUE = auto()
-    RAISE = auto()
+HTTP = 60
+FTP = 61
+STMP = 62
+TCP = 63
+IP = 64
+SSL = 65
 
-    # Protocols
-    HTTP = auto()
-    FTP = auto()
-    STMP = auto()
-    TCP = auto()
-    IP = auto()
-    SSL = auto()
+EOF = 66
 
-    # End of line obv LOL
-    EOF = auto()
-
-# Token Type Metaclass
-@dataclass
 class Token:
-    type: Final[TokenType]
-    lexeme: Final[str]
-    literal: Final[object]
-    line: Final[int]
-    def __dbgrepr__(self) -> str:
-        return f"<{self.type}:{self.lexeme} value=< {self.literal} >"
-    def __repr__(self) -> str:
-        return self.type.name
+    def __init__(self, type, lexeme, literal, line):
+        self.type = type
+        self.lexeme = lexeme
+        self.literal = literal
+        self.line = line
+
+    def __dbgrepr__(self):
+        return (
+            "<"
+            + str(self.type)
+            + ":"
+            + self.lexeme
+            + " value=< "
+            + str(self.literal)
+            + " >"
+        )
+
+    def __repr__(self):
+        return [k for k,v in globals().items() if v == self.type][0]

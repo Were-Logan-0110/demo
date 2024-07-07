@@ -1,0 +1,44 @@
+"MExpression":
+  funcs:
+    __init__:
+      args: []
+    apply: 
+      args: []
+    simplify: 
+      args: []
+    differentiate: 
+      returns: '"MExpression"'
+      args: []
+    depthSimplify: 
+      args: ['left: "MExpression"','right: "MExpression"']
+    __mul__:
+      args: ['other: "MExpression"']
+    __rmul__:
+      args: ['other: "MExpression"']
+    __add__:
+      args: ['other: "MExpression"']
+    __radd__:
+      args: ['other: "MExpression"']
+    __sub__:
+      args: ['other: "MExpression"']
+    __rsub__:
+      args: ['other: "MExpression"']
+    __truediv__:
+      args: ['other: "MExpression"']
+    __rtruediv__:
+      args: ['other: "MExpression"']
+    __pow__:
+      args: ['other: "MExpression"']
+    __rpow__:
+      args: ['other: "MExpression"']
+  childrenClasses:
+    MNumber: ['num: float']
+    Addition: ["left: MExpression","right: MExpression",'op: str = "+"']
+    Subtraction: ["left: MExpression","right: MExpression",'op: str = "-"']
+    Multiplication: ["left: MExpression","right: MExpression",'op: str = "*"']
+    Division: ["left: MExpression","right: MExpression",'op: str = "/"']
+    Exponentiation: ["left: MExpression","right: MExpression",'op: str = "**"']
+    MFactorVariable: ["left: MExpression","right: MExpression",'op: str = "*"']
+    MFactorExpr: ["left: MExpression","right: MExpression",'op: str = "*"']
+    Negation: ["expr: MExpression"]
+    Log: ["expr: MExpression"]
