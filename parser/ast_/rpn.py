@@ -128,7 +128,6 @@ def rpnSimplifier(rpn_expression):
             for _ in range(__):
                 for k in token.keys():
                     print(k)
-                    nStack.append(k if not int(1).i)
                     if abs(__) > 1:
                         nStack.append("*")
 

@@ -54,7 +54,7 @@ equations = [
     "(x + 1)**2",  # Binomial expansion
     "2*(x + 3)",  # Distributive property
     "(x**2 + 2*x + 1) / (x + 1)",  # Rational expression to simplify
-    "2*(x + 3) - (x + 1)",  # Combination of terms
+    "2*(x + 3) - (x + 1)",  # Combination of termsw
     "x**2 - 4",  # Difference of squares
     "(x - 2)*(x + 2)",  # Product of binomials
     "2*x*(x + 3) - x**2",  # Polynomial expansion and combination
@@ -76,21 +76,27 @@ equations = [
 # factoredExpr = expr.factor()
 # print(expr)
 # print(factoredExpr)
-eq = "(x-1)*(x+1)"
-evaled = evaluate(eq).expand().apply()
-print(f"EQ: {evaled}\n\n ---- RPN:{(evaled.rpn())}\n\n")
-print(f"EQ Simplified: {evaled.simplify()}")
+# eq = "2x - 2x"
+# evaled = evaluate(eq).expand().apply()
+# print(f"EQ: {evaled}\n\n ---- RPN:{(evaled.rpn())}\n\n")
+# print(f"EQ Simplified: {evaled.simplify()}")
+# evaled = evaled.simplify()
+# print(evaled._collectSums())
+# print(f"OG-Expr: {evaled.collectAdditionsSubtractions()[0]}")
+# [print(f"Add: {i}") for i in evaled.collectAdditionsSubtractions()[1]]
+# [print(f"Sub: {i}") for i in evaled.collectAdditionsSubtractions()[2]]
+# [print(i) for i in evaled.collectAdditionsSubtractions()[1]]
 # generateFormattedTable(evaluate(eq).expand().apply().__str__(), 1, 3)
 # generateFormattedTable(expand(parse_expr(eq,symbols)).__str__(), 1, 3)
-# for c,eq in enumerate(equations):
-#     print(f"Equation: {eq} Count: {c}")
-#     print(
-#         f"Self Diff: {evaluate(eq).differentiate('x').expand().apply().__str__(False)}"
-#     )
-#     print(f"Self Simp: {simplify(evaluate(eq).differentiate('x').apply().__str__())}")
-#     print(f"Sympy Diff: {diff(parse_expr(eq,symbols))}")
-#     print(f"Sympy Simp: {simplify(diff(parse_expr(eq,symbols)))}")
-#     print("-"*30)
+for c,eq in enumerate(equations):
+    print(f"Equation: {eq} Count: {c}")
+    print(
+        f"Self Diff: {evaluate(eq).differentiate('x').expand().apply()._collectSums().__str__()}"
+    )
+    print(f"Self Simp: {simplify(evaluate(eq).differentiate('x').apply()._collectSums().__str__())}")
+    print(f"Sympy Diff: {diff(parse_expr(eq,symbols))}")
+    print(f"Sympy Simp: {simplify(diff(parse_expr(eq,symbols)))}")
+    print("-"*30)
 
 # testExprs = [
 #     "4*x**3 - 3*x**2 + 2*x - 1",

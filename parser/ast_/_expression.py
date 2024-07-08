@@ -363,6 +363,71 @@ class MExpression:
         return isinstance(self,Number)
     def _isNumberApplied(self):
         return isinstance(self.apply(),Number)
+    def _unPackExpr(self):
+        if isinstance(self,BinaryMExpression): return self.left,self.right
+        if isinstance(self,Number): return self.num
+        if isinstance(self,MVariable): return self.name
+    def collectAdditionsSubtractions(self) -> ("MExpression", list["MExpression"],list["MExpression"]):
+        additions = []
+        subtractions = []
+        factors = {}
+        rExpr = Number(0)
+        rExpr = self._collectAddSub(self, rExpr, additions, subtractions,factors)
+        return rExpr, additions, subtractions,factors
+
+    def _collectAddSub(self, expr: "MExpression", rExpr: "MExpression", additions: list["MExpression"], subtractions: list["MExpression"],factors: dict,isSub:bool=False):
+        if isinstance(expr, Addition):
+            rExpr= self._collectAddSub(expr.left,rExpr, additions, subtractions, factors,isSub)
+            rExpr = self._collectAddSub(expr.right,rExpr, additions, subtractions, factors, isSub)
+        elif isinstance(expr, Subtraction):
+            rExpr = self._collectAddSub(expr.left,rExpr, additions, subtractions, factors,isSub)
+            rExpr = self._collectAddSub(expr.right,rExpr,additions,subtractions, factors,True)
+        elif isinstance(expr,(MVariable,Number)) or (isinstance(expr,Negation) and isinstance(expr.expr,(MVariable,Number))):
+                subtractions.append(expr.expr if isinstance(expr,Negation) else expr) if isSub else additions.append(expr.expr if isinstance(expr,Negation) else expr)
+        elif isinstance(expr,Multiplication) and isinstance(expr.left,Number) and isinstance(expr.right,MVariable):
+            factors[expr.right.name] = factors.get(expr.right.name,0) + (
+                -expr.left._convToIntIfPossible().num
+                if isSub
+                else expr.left._convToIntIfPossible().num
+            )
+        elif isinstance(expr,Multiplication) and isinstance(expr.right,Number) and isinstance(expr.left,MVariable):
+            factors[expr.left.name] = factors.get(expr.left.name, 0) + (
+                -expr.right._convToIntIfPossible().num
+                if isSub
+                else expr.right._convToIntIfPossible().num
+            )
+        elif isinstance(expr,MFactorVariable):
+            factors[expr.right.name] = factors.get(expr.right.name, 0) + (
+                -expr.left._convToIntIfPossible().num
+                if isSub
+                else expr.left._convToIntIfPossible().num
+            )
+        else:
+            rExpr = rExpr.add(Negation(expr) if isSub else expr)
+        return rExpr
+    def _collectSums(self) -> "MExpression":
+        nExpr, additions,subtractions,factors = self.collectAdditionsSubtractions()
+        _factors = {}
+        numSums = 0
+        for addition in additions:
+            if isinstance(addition, MVariable):
+                _factors[addition.name] = _factors.get(addition.name,0) + 1
+            elif isinstance(addition, Number):
+                numSums = numSums + addition._convToIntIfPossible().num
+        for subtraction in subtractions:
+            if isinstance(subtraction, MVariable):
+                _factors[addition.name] = (
+                    _factors.get(addition.name, 0) - 1
+                )
+            elif isinstance(subtraction, Number):
+                numSums = numSums - subtraction._convToIntIfPossible().num
+        for variable,factor in factors.items():
+            _factors[variable] = _factors.get(variable,0) + factor
+        for variable,factor in _factors.items():
+            if factor != 0:
+                nExpr = nExpr.add(MFactorVariable(Number(factor),MVariable(variable)))
+        nExpr = nExpr.add(Number(numSums))
+        return nExpr
     def __str__(self, priority=None):
         if not self.isNumber():
             if priority == None:
@@ -398,6 +463,7 @@ class BinaryMExpression(MExpression):
         _class = self.__class__
         left = self.left.apply().expand()
         right = self.right.apply().expand()
+        print(f"Left -> {left} ---- Right -> {right}")
         if left._isBinary():
             binaryLeft, binaryRight = left._applyExpandAndUnpackBinary()
             if (not isinstance(left, self.inverseClass)) and self._isinstanceAll([binaryLeft, binaryRight], [Number]):
@@ -475,7 +541,11 @@ class BinaryMExpression(MExpression):
 class Number(MExpression):
     def __init__(self, num: float):
         super().__init__()
-
+        num = num.num if isinstance(num,Number) else num
+        if num < 0:
+            self.__class__ = Negation
+            self.__init__(Number(abs(num)))
+            return
         self.num: float = num
 
     def apply(self) -> MExpression:
@@ -564,8 +634,8 @@ class Subtraction(BinaryMExpression):
     def apply(self) -> MExpression:
         return Number(self.left.apply().num - self.right.apply().num) if self._isBothSidesNumbersApplied() else self.left.apply().sub(self.right.apply(),self.priority)
     def expand(self, priority:bool = False) -> MExpression:
-        return Subtraction(self.left.expand(),self.right.expand(),priority)
-
+        print(f"Left: {self.left} ---- Right: {self.right}")
+        return Subtraction(self.left.expand(),(self.right.__class__(self.right.expand().left,Negation(self.right.expand().right))) if isinstance(self.right,(Subtraction,Addition)) else self.right.expand(),priority)
     def differentiate(self, target: str) -> "MExpression":
         return self.left.differentiate(target).sub(self.right.differentiate(target))
     def rpn(self):
@@ -635,7 +705,6 @@ class Multiplication(BinaryMExpression):
         right = self.right.apply().expand()
         if left._isSum() and right._isSum():
             lBinaryLeft, lBinaryRight = left._applyExpandAndUnpackBinary()
-            rBinaryLeft, rBinaryRight = right._applyExpandAndUnpackBinary()
             return left.__class__(lBinaryLeft.mul(right).expand(True),lBinaryRight.mul(right).expand(True),priority)
         elif right._isSum():
             binaryLeft, binaryRight = right._applyExpandAndUnpackBinary()
@@ -683,6 +752,16 @@ class Division(BinaryMExpression):
         )
     def rpn(self):
         return self.left.rpn() + self.right.rpn() + ["/"]
+    def expand(self):
+        return self
+
+    def expand(self, priority: bool = None):
+        if priority != None:
+            priority = self.priority
+        left = self.left.apply().expand(True)
+        right = self.right.apply().expand(True)
+        return Division(left,right,True)
+
     def __dbgstr__(self, indent=0):
         return (
             " " * indent
@@ -703,6 +782,9 @@ class Exponentiation(MExpression):
     op: str = "**"
     def __init__(self, left: MExpression, right: MExpression,priority: bool = False):
         super().__init__()
+        if right._isNumberApplied() and isinstance(left,Exponentiation) and left.right._isNumberApplied():
+            right = right.apply().add(left.right.apply()).apply()
+            left = left.left
         self.left: MExpression = left
         if right.isNumber() and right.num%2==0 and isinstance(self.left,Negation):
             self.left = self.left.expr
@@ -788,7 +870,7 @@ class MVariable(MExpression):
 
     def apply(self):
         return self
-    def expand(self):
+    def expand(self,_=None):
         return self
     def simplify(self):
         return self
@@ -809,17 +891,20 @@ class MFactorVariable(BinaryMExpression):
     op: str = "*"
     def __init__(self, left: MExpression, right: MExpression,priority: bool = False):
         super().__init__()
-
         self.left: MExpression = left
         self.right: MExpression = right
         self.priority = priority
 
     def apply(self) -> MExpression:
         return self.left.apply().mul(self.right.apply(),self.priority,False)
-    def expand(self):
-        return Multiplication(self.left.expand(),self.right.expand(),self.priority,False)
+    def expand(self,priority=None):
+        if priority == None:
+            priority = self.priority
+        return Multiplication(self.left.expand(),self.right.expand(),priority,False)
     def rpn(self):
-        return Multiplication(self.left,self.right,self.priority,False).rpn()
+        if priority == None:
+            priority = self.priority
+        return Multiplication(self.left,self.right,priority,False).rpn()
     def differentiate(self, target: str) -> "MExpression":
         return Multiplication(self.left,self.right,self.priority,False).differentiate(target)
 
